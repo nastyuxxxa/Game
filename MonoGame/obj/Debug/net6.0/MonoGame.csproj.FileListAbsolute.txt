@@ -23,4 +23,9 @@ C:\Users\User\source\repos\MonoGame\obj\Debug\net6.0\refint\MonoGame.dll
 C:\Users\User\source\repos\MonoGame\obj\Debug\net6.0\MonoGame.pdb
 C:\Users\User\source\repos\MonoGame\obj\Debug\net6.0\MonoGame.genruntimeconfig.cache
 C:\Users\User\source\repos\MonoGame\obj\Debug\net6.0\ref\MonoGame.dll
-C:\Users\User\source\repos\MonoGame\bin\Debug\net6.0\Content\спрайт1.xnb
+C:\Users\User\source\repos\MonoGame\bin\Debug\net6.0\Content\pink.xnb
+C:\Users\User\source\repos\MonoGame\bin\Debug\net6.0\Content\pink_run.xnb
+C:\Users\User\source\repos\MonoGame\bin\Debug\net6.0\Content\Fall.xnb
+C:\Users\User\source\repos\MonoGame\bin\Debug\net6.0\Content\block.xnb
+C:\Users\User\source\repos\MonoGame\bin\Debug\net6.0\Content\block2.xnb
+C:\Users\User\source\repos\MonoGame\bin\Debug\net6.0\Content\background.xnb

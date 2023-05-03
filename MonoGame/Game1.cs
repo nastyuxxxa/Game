@@ -22,24 +22,34 @@ namespace MonoGame
     {
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
-        Texture2D texture;
+        private Player player;
+        private Evil evil;
+        Texture2D spriteTexture;
         Texture2D evilTexture;
+        Texture2D blockTexture1;
+        Texture2D blockTexture2;
         Vector2 spritePosition = Vector2.Zero; // текущая позиция спрайта
         Vector2 evilSpritePosition; // текущая позиция злого спрайта
-        float spriteSpeed = 5f; // шаг перемещения
-        //float evilSpriteSpeed = 2f;
-        //int frameWidth = 43;
-        //int frameHeight = 60;
-        //Point currentFrame = new Point(0, 0);
-        //Point spriteSize = new Point(14, 1);
-        //Point evilSpriteSize;
-        //int currentTime = 0; // сколько времени прошло
-        //int period = 55; // период обновления в миллисекундах
+        float spriteSpeed = 3f; // шаг перемещения
+        float evilSpriteSpeed = 3f/2;
+        Point spriteSize;
+        Point evilSpriteSize;
+        Color color = Color.CornflowerBlue;
+        int numberLevel = 1; //номер уровня
+        List<Block> blocks = new List<Block>();
+        KeyboardState Oldkeys;
+
+        private List<Rectangle> collisionRects;
 
         public Game1()
         {
             graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
+            spritePosition = Vector2.Zero;
+            graphics.PreferredBackBufferHeight = 334; // высота карты
+            graphics.PreferredBackBufferWidth = 606; // ширина карты
+            evilSpritePosition = new Vector2(graphics.PreferredBackBufferWidth/2, 59);
+            
         }
 
         protected override void Initialize() // главные настройки, касающиеся всей игры
@@ -51,7 +61,21 @@ namespace MonoGame
         protected override void LoadContent() // ресурсы игры, такие как изображения, звуки, шрифты
         {
             spriteBatch = new SpriteBatch(GraphicsDevice);
-            texture = Content.Load<Texture2D>("run"); // загружаем изображение
+            spriteTexture = Content.Load<Texture2D>("pink"); // загружаем изображение
+            evilTexture = Content.Load<Texture2D>("Fall");
+
+            blockTexture1 = Content.Load<Texture2D>("block");
+            blockTexture2 = Content.Load<Texture2D>("block2");
+            collisionRects = new List<Rectangle>();
+            Level.CreateMaps(blocks, numberLevel, blockTexture1, blockTexture2);
+            foreach (var b in blocks)
+            {
+                collisionRects.Add(new Rectangle(b.rectangle.X, b.rectangle.Y, b.rectangle.Width, b.rectangle.Height));
+            }
+
+            player = new Player(Content.Load<Texture2D>("pink_run"),  Content.Load<Texture2D>("pink"));
+            spriteSize = new Point(spriteTexture.Width, spriteTexture.Height);
+            evilSpriteSize = new Point(evilTexture.Width, evilTexture.Height);
         }
 
         protected override void Update(GameTime gameTime) // обновление состояния
@@ -61,46 +85,39 @@ namespace MonoGame
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
 
-            //// добавляем к текущему времени прошедшее время
-            //currentTime += gameTime.ElapsedGameTime.Milliseconds;
-            //// если текущее время превышает период обновления спрайта
-            //if (currentTime > period)
-            //{
-            //    currentTime -= period; // вычитаем из текущего времени период обновления
+            evilSpritePosition.X += evilSpriteSpeed;
+            if (evilSpritePosition.X > Window.ClientBounds.Width - 4*evilTexture.Width || evilSpritePosition.X < (Window.ClientBounds.Width / 2))
+                evilSpriteSpeed *= -1;
 
-            //    if (spritePosition.X > Window.ClientBounds.Width - frameWidth || spritePosition.X < 0)
-            //    {
-            //        spriteSpeed *= -1;
-            //        ++currentFrame.Y;
-            //        if (currentFrame.Y >= spriteSize.Y)
-            //            currentFrame.Y = 0;
-            //    }
+            if (keyboardState.IsKeyDown(Keys.F) && Oldkeys.IsKeyDown(Keys.F))
+            {
+                numberLevel++;
+            }
+            Oldkeys = keyboardState;
 
-            //    ++currentFrame.X; // переходим к следующему фрейму в спрайте
-            //    if (currentFrame.X >= spriteSize.X)
-            //    {
-            //        currentFrame.X = 0;
-            //    }
-            //}
+            var initPos = player.position;
+            player.Update();
+            // столкновения по y
+            foreach (var rect in collisionRects)
+            {
+                player.isFalling = true;
+                if (rect.Intersects(player.playerFallRect))
+                {
+                    player.isFalling = false;
+                    break;
+                }
+            }
 
-            if (keyboardState.IsKeyDown(Keys.Left))
-                spritePosition.X -= spriteSpeed;
-            if (keyboardState.IsKeyDown(Keys.Right))
-                spritePosition.X += spriteSpeed;
-            if (keyboardState.IsKeyDown(Keys.Up))
-
-            if (keyboardState.IsKeyDown(Keys.Down))
-
-
-            //// проверяем, не убежал ли наш спрайт с игрового поля
-            //if (spritePosition.X < 0)
-            //    spritePosition.X = 0;
-            //if (spritePosition.Y < 0)
-            //    spritePosition.Y = 0;
-            //if (spritePosition.X > Window.ClientBounds.Width - spriteSize.X)
-            //    spritePosition.X = Window.ClientBounds.Width - spriteSize.X;
-            //if (spritePosition.Y > Window.ClientBounds.Height - spriteSize.Y)
-            //    spritePosition.Y = Window.ClientBounds.Height - spriteSize.Y;
+            // столкновения по x
+            foreach(var rect in collisionRects)
+            {
+                if (rect.Intersects(player.hitbox))
+                {
+                    player.position.X = initPos.X;
+                    player.velocity.X = initPos.X;
+                    break;
+                }
+            }
 
             base.Update(gameTime);
         }
@@ -109,12 +126,15 @@ namespace MonoGame
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
-            // TODO: Add your drawing code here
+            // отрисовка спрайта
+            spriteBatch.Begin();
+            player.Draw(spriteBatch, gameTime);
+            spriteBatch.Draw(evilTexture, evilSpritePosition, Color.White);
 
-            spriteBatch.Begin(SpriteSortMode.FrontToBack, BlendState.AlphaBlend);
+            foreach (var block in blocks)
+                block.Draw(spriteBatch);
 
-            spriteBatch.Draw(texture, spritePosition, Color.White);
-
+            //evil.Draw(spriteBatch, gameTime);
             spriteBatch.End();
 
             base.Draw(gameTime);
@@ -122,7 +142,12 @@ namespace MonoGame
 
         protected bool Collide() // обработка столкновений
         {
-            return true;
+            Rectangle spriteRect = new Rectangle((int)spritePosition.X,
+                (int)spritePosition.Y, spriteSize.X, spriteSize.Y);
+            Rectangle evilSpriteRect = new Rectangle((int)evilSpritePosition.X,
+                (int)evilSpritePosition.Y, evilSpriteSize.X, evilSpriteSize.Y);
+
+            return spriteRect.Intersects(evilSpriteRect);
         }
     }
 }
